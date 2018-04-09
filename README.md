@@ -1,5 +1,5 @@
-# Project Title
-One Paragraph of project description goes here
+# StereoBlender 
+This repository is a collection of blender scripts to create stereo depth ground truth datasets using Blender 3D modelling SW suite. The scripts allow the creation of stereo datasets using various error and trajectory modes. The aim for creating these scripts is to automate the creation of datasets using blender to aid in the training and testing of conulotional neural networks. The scripts are written in such a way that it is possibel to use any Blender model [.BLEND file].
 
 ## Getting Started
 
