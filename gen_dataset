@@ -3,10 +3,12 @@
 import sys
 import os
 from argparse import ArgumentParser
-sys.path.append("/home/rowsomep/scripts/utils/")
-import script_utils
 import time
 import shutil
+
+homedir=os.environ['HOME']
+sys.path.append(homedir, "scripts/utils/")
+import script_utils
 
 def parse_args():
     usage = "usage: %prog [options] -d <dir> [-o <dir>] [-j] "
@@ -33,8 +35,8 @@ def main():
     start = time.time()
     
     options = parse_args()
-    blender = "/home/rowsomep/blender-git/build_linux/bin/blender"
-    script = "/home/rowsomep/scripts/render_scene.py"
+    blender = os.path.join(homedir, "blender-git/build_linux/bin/blender")
+    script = os.path.join(homedir, "scripts/render_scene.py")
 
     cmd = " ".join([    blender,
                         options.blender_model,
@@ -44,7 +46,7 @@ def main():
 
     os.system(cmd)
     dataset_basename = os.path.basename(options.blender_model).split(".")[0]
-    output_path = os.path.join("/home/rowsomep/blender_output", dataset_basename)
+    output_path = os.path.join(homedir, "blender_output", dataset_basename)
     script_utils.conv_gt(output_path)
     
     # automate naming of dataset and moving to storage

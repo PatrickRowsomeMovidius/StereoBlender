@@ -10,7 +10,7 @@ import numpy as np
 def create_movi_path(resolution, data_width):
     # create directories for output structure
     base_prj_name = bpy.path.basename(bpy.context.blend_data.filepath).split('.')[0]
-    output_root = '/home/rowsomep/blender_output'
+    output_root = os.path.join("/home", os.getlogin(), "blender_output")
     base_out_dir = check_folder(os.path.join(output_root, base_prj_name, resolution))
     data_dir = create_folder(os.path.join(base_out_dir, data_width))
     l_data_dir = create_folder(os.path.join(data_dir, "left"))
