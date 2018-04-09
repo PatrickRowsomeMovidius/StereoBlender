@@ -318,19 +318,22 @@ def linear_translation(camera_pose_pairs, path_length=1.0):
         poses.append([l_cam_pose, r_cam_pose])
     return poses
 
-def axis_rotation(camera_pose_pairs, angle_range_radius=45, axis="x"):
+def axis_rotation(camera_pose_pairs, angle_range_radius=45.0, axis="x"):
     poses = []
-    angle_step_size = float(angle_range_radius)/len(camera_pose_pairs) 
-    
+    angle_step_size = float(angle_range_radius)*2.0/len(camera_pose_pairs) 
+   
     for pose_num, lr_pose in enumerate(camera_pose_pairs):
         angle = angle_step_size*pose_num
-        rotation = rpy_rotation(angle, 0, 0)
-        
+        rotation = rpy_rotation_mat(angle, 0, 0)
+        init_rotation = rpy_rotation_mat(-angle_range_radius, 0, 0)
         if axis == "y":
-            rotation = rpy_rotation(0, angle, 0)
+            rotation = rpy_rotation_mat(0, angle, 0)
+            init_rotation = rpy_rotation_mat(0, -angle_range_radius, 0)
         elif axis == "z":
-            rotation = rpy_rotation(0, 0, angle)
+            rotation = rpy_rotation_mat(0, 0, angle)
+            init_rotation = rpy_rotation_mat(0, 0, -angle_range_radius)
 
+        l_pose = lr_pose[0]*init_rotation
         l_pose = lr_pose[0]*rotation
         r_pose = local_transform(l_pose, x_trans=0.2)
         poses.append([l_pose, r_pose])
@@ -373,6 +376,13 @@ def calc_camera_poses(l_cam_poses, num_samples, error_mode="no_error", traj_mode
             l_k_errors, r_k_errors, lr_poses = calc_calibration_errors(l_gt_k, r_gt_k, lr_gt_p, l_k, r_k, lr_p)
             camera_pose_pairs = [[l_cam_pose, r_cam_pose] for _ in range(len(lr_poses))]
             camera_pose_pairs = [[camera_pose_pairs[i][0], camera_pose_pairs[i][1]*lr_poses[i]] for i in range(len(camera_pose_pairs))]
+        elif error_mode == "x_axis":
+            camera_pose_pairs = axis_rotation(camera_pose_pairs, 0.1, "x")
+        elif error_mode == "y_axis":
+            camera_pose_pairs = axis_rotation(camera_pose_pairs, 0.1, "y")
+        elif error_mode == "z_axis":
+            camera_pose_pairs = axis_rotation(camera_pose_pairs, 0.1, "z")
+        
         camera_poses = camera_poses + camera_pose_pairs
     
     return camera_poses

@@ -23,7 +23,7 @@ def parse_options():
     parser = argparse.ArgumentParser(description=usage_text)
 
     parser.add_argument("-e", "--error_mode", dest="error_mode", type=str, default="none",
-            help="This is a string option to set the error mode, possible values are: random, none, dyncal")    
+            help="This is a string option to set the error mode, possible values are: random, none, dyncal, x_axis, y_axis, z_axis")    
     parser.add_argument("-t", "--traj_mode", dest="traj_mode", type=str, default="none",
             help="This is a string option to set the trajectory mode, possible values are: none, random, linear, rotation, linear_random_rotation, linear_random_translation")
     parser.add_argument("-n", "--num_samples", dest="num_samples", type=int, default=10, help="Number of sequences to render")
