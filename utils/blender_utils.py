@@ -72,7 +72,6 @@ def get_calibration_matrix_K(camd):
     else: # 'HORIZONTAL' and 'AUTO'
         # the sensor width is fixed (sensor fit is horizontal),
         # the sensor height is effectively changed with the pixel aspect ratio
-        pixel_aspect_ratio = scene.render.pixel_aspect_x / scene.render.pixel_aspect_y
         s_u = resolution_x_in_px * scale / sensor_width_in_mm
         s_v = resolution_y_in_px * scale * pixel_aspect_ratio / sensor_height_in_mm
 
@@ -124,6 +123,7 @@ def print_calib_file(l_cam_obj, r_cam_obj, output_directory, filename):
         [calib_file.write(str(data[0]) + " " + str(data[1]) + " " + str(data[2]) + " ") for data in right_K]
         calib_file.write("\n")
         p = get_calibration_matrix_P(l_cam_obj, r_cam_obj)
+        print(p)
         calib_file.write("P1 ")
         [calib_file.write(str(data[0]) + " " + str(data[1]) + " " + str(data[2]) + " " + str(data[3]) + " ") for data in p]
         calib_file.write("\n")
@@ -172,9 +172,9 @@ def setup_render_options(scene, resolution, data_width, use_GPU=True):
 
 
 def setup_cams(l_cam):
-    l_cam.data.sensor_height = 3.42
-    l_cam.data.sensor_width=4.54
-    l_cam.data.lens=4.10
+    l_cam.data.sensor_height=2.160
+    l_cam.data.sensor_width=3.840
+    l_cam.data.lens=2.793615
     l_cam.data.sensor_fit='HORIZONTAL'
     l_cam.select = True
     bpy.ops.object.duplicate()
@@ -281,6 +281,11 @@ def render_scenes(lr_poses, scene, l_cam, l_data_dir, r_cam, r_data_dir, output_
     l_cam.matrix_world = pose_init
 
 
+def random_pose_delta():
+    pose_delta = Matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    return random_error(pose_delta)
+
+
 def random_error(matrix_world, x_ang_thres=2, y_ang_thres=2, z_ang_thres=2, trans_thres=0):
     pose = matrix_world.copy()
     # rotation
@@ -293,9 +298,9 @@ def random_error(matrix_world, x_ang_thres=2, y_ang_thres=2, z_ang_thres=2, tran
     return pose
 
 
-def local_transform(matrix_world, x_trans=0, y_trans=0, z_tranz=0):
+def local_transform(matrix_world, x_trans=0, y_trans=0, z_trans=0):
     pose = matrix_world.copy()
-    trans_local = Vector((x_trans, y_trans, z_tranz))
+    trans_local = Vector((x_trans, y_trans, z_trans))
     trans_world = matrix_world.to_3x3() * trans_local
     pose.translation += trans_world
     return pose
@@ -309,34 +314,52 @@ def random_positions(lr_poses, x_ang_thres=20, y_ang_thres=20, z_ang_thres=20, t
         poses.append([l_pose, r_pose])
     return poses
 
-def linear_translation(camera_pose_pairs, path_length=1.0):
+def linear_translation(camera_pose_pairs, path_length=5.0):
     step_size=float(path_length)/len(camera_pose_pairs)
-    poses = [] 
-    for step_num, pose_pair in enumerate(camera_pose_pairs):
-        l_cam_pose = local_transform(pose_pair[0], 0, 0, -step_size*step_num)
-        r_cam_pose = local_transform(pose_pair[1], 0, 0, -step_size*step_num)
+    poses = []
+    orig_l_cam_pose = camera_pose_pairs[0][0]
+    orig_r_cam_pose = camera_pose_pairs[0][1]
+
+    for step_num in range(len(camera_pose_pairs)+1):
+        l_cam_pose = local_transform(orig_l_cam_pose, z_trans=step_size*(-step_num))
+        r_cam_pose = local_transform(l_cam_pose, x_trans=0.035)
+        print(l_cam_pose)
         poses.append([l_cam_pose, r_cam_pose])
+    return poses
+
+def const_rotation(camera_pose_pairs, angle_range_radius=45.0, axis="x"):
+    poses = []
+    angle = angle_range_radius
+    
+    for pose_num, lr_pose in enumerate(camera_pose_pairs):
+
+        if axis == "y":
+            rotation = rpy_rotation_mat(0, angle, 0)
+        elif axis == "z":
+            rotation = rpy_rotation_mat(0, 0, angle)
+        elif axis == "x":
+            rotation = rpy_rotation_mat(angle, 0, 0)
+        
+        r_pose = local_transform(lr_pose[0], x_trans=0.2)
+        r_pose = r_pose*rotation
+        poses.append([lr_pose[0], r_pose])
     return poses
 
 def axis_rotation(camera_pose_pairs, angle_range_radius=45.0, axis="x"):
     poses = []
-    angle_step_size = float(angle_range_radius)*2.0/len(camera_pose_pairs) 
-   
+    angle_step_size = float(angle_range_radius)*2.0/len(camera_pose_pairs)
+    angle = -angle_range_radius
+    
     for pose_num, lr_pose in enumerate(camera_pose_pairs):
-        angle = angle_step_size*pose_num
         rotation = rpy_rotation_mat(angle, 0, 0)
-        init_rotation = rpy_rotation_mat(-angle_range_radius, 0, 0)
         if axis == "y":
             rotation = rpy_rotation_mat(0, angle, 0)
-            init_rotation = rpy_rotation_mat(0, -angle_range_radius, 0)
         elif axis == "z":
             rotation = rpy_rotation_mat(0, 0, angle)
-            init_rotation = rpy_rotation_mat(0, 0, -angle_range_radius)
-
-        l_pose = lr_pose[0]*init_rotation
-        l_pose = lr_pose[0]*rotation
-        r_pose = local_transform(l_pose, x_trans=0.2)
-        poses.append([l_pose, r_pose])
+        r_pose = local_transform(lr_pose[0], x_trans=0.2)
+        r_pose = r_pose*rotation
+        poses.append([lr_pose[0], r_pose])
+        angle+=angle_step_size
     return poses
 
 def calc_camera_poses(l_cam_poses, num_samples, error_mode="no_error", traj_mode="stationary"):
@@ -345,7 +368,7 @@ def calc_camera_poses(l_cam_poses, num_samples, error_mode="no_error", traj_mode
 
     for l_cam_pose in l_cam_poses:
         # create baseline for right camera 
-        r_cam_pose = local_transform(l_cam_pose, x_trans=0.2)
+        r_cam_pose = local_transform(l_cam_pose, x_trans=0.035)
         
         # init camera list of left-right camera pose tuples  
         camera_pose_pairs = [[l_cam_pose, r_cam_pose] for _ in range(num_samples)]
@@ -367,6 +390,9 @@ def calc_camera_poses(l_cam_poses, num_samples, error_mode="no_error", traj_mode
         # add errors to cameras: no error, random error, or parameter sequence
         if error_mode == "random":
             camera_pose_pairs = [[pose_pair[0], random_error(pose_pair[1])] for pose_pair in camera_pose_pairs]
+        elif error_mode == "const":
+            pose_delta = random_pose_delta()
+            camera_pose_pairs = [[pose_pair[0], pose_pair[1]*pose_delta] for pose_pair in camera_pose_pairs]
         elif error_mode == "dyncal":
             # read dyncal results and calc errors compared to GT
             result_path = os.path.join("/home", os.getlogin() , "blender_output/dyncal_results/Kitchen_06_rotations")
@@ -377,11 +403,18 @@ def calc_camera_poses(l_cam_poses, num_samples, error_mode="no_error", traj_mode
             camera_pose_pairs = [[l_cam_pose, r_cam_pose] for _ in range(len(lr_poses))]
             camera_pose_pairs = [[camera_pose_pairs[i][0], camera_pose_pairs[i][1]*lr_poses[i]] for i in range(len(camera_pose_pairs))]
         elif error_mode == "x_axis":
-            camera_pose_pairs = axis_rotation(camera_pose_pairs, 0.1, "x")
+            camera_pose_pairs = axis_rotation(camera_pose_pairs, 1, "x")
         elif error_mode == "y_axis":
-            camera_pose_pairs = axis_rotation(camera_pose_pairs, 0.1, "y")
+            camera_pose_pairs = axis_rotation(camera_pose_pairs, 1, "y")
         elif error_mode == "z_axis":
-            camera_pose_pairs = axis_rotation(camera_pose_pairs, 0.1, "z")
+            camera_pose_pairs = axis_rotation(camera_pose_pairs, 1, "z")
+        elif error_mode == "cx_axis":
+            camera_pose_pairs = const_rotation(camera_pose_pairs, 1, "x")
+        elif error_mode == "cy_axis":
+            camera_pose_pairs = const_rotation(camera_pose_pairs, 1, "y")
+        elif error_mode == "cz_axis":
+            camera_pose_pairs = const_rotation(camera_pose_pairs, 1, "z")
+
         
         camera_poses = camera_poses + camera_pose_pairs
     

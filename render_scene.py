@@ -27,13 +27,18 @@ def parse_options():
     parser.add_argument("-t", "--traj_mode", dest="traj_mode", type=str, default="none",
             help="This is a string option to set the trajectory mode, possible values are: none, random, linear, rotation, linear_random_rotation, linear_random_translation")
     parser.add_argument("-n", "--num_samples", dest="num_samples", type=int, default=10, help="Number of sequences to render")
+    parser.add_argument("-m", "--multi_cam", dest="multi_cam", type=bool, default=False, help="Switch to activate multi-cam system")
 
     args = parser.parse_args(argv)
 
     return args
 
-def check_camera_bookmarks():
-    camera_bookmarks = ["Camera", "Camera.a", "Camera.b", "Camera.c"]
+def check_camera_bookmarks(multi_cam):
+    camera_bookmarks = []
+    if(multi_cam):
+        camera_bookmarks = ["Camera", "Camera.a", "Camera.b", "Camera.c", "Camera.d"]
+    else:
+        camera_bookmarks = ["Camera"]
     l_poses = []
     for camera_bookmark in camera_bookmarks:
         if bpy.data.objects.get(camera_bookmark) is not None:
@@ -54,7 +59,7 @@ def main():
     resolutions=["640x480"]
     data_widths=["8bit"]
     
-    l_poses = check_camera_bookmarks()
+    l_poses = check_camera_bookmarks(options.multi_cam)
     l_cam, r_cam = setup_cams(bpy.data.objects["Camera"])
     lr_poses = calc_camera_poses(l_poses, options.num_samples, options.error_mode, options.traj_mode)
 
@@ -70,12 +75,15 @@ def main():
             
             # set cameras and print calibration files
             output_node.base_path = gt_data_dir 
-            stereo_transform(l_cam, r_cam, 0.2)
+            stereo_transform(l_cam, r_cam, 0.035)
+            l_cam.matrix_world = lr_poses[0][0]
+            r_cam.matrix_world = lr_poses[0][1]
             print_calib_file(l_cam, r_cam, base_dir, "calib")
-            
+             
             # render scenes at defined poses
             render_scenes(lr_poses, scene, l_cam, l_data_dir, r_cam, r_data_dir, output_node)
             
+
     l_cam.name = "Camera"
     r_cam.select = True
     bpy.ops.object.delete()

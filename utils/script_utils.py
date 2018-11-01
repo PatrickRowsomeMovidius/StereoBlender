@@ -1,4 +1,3 @@
-import cv2
 import os
 import numpy as np
 from PIL import Image
@@ -8,6 +7,8 @@ import OpenEXR
 import Imath
 import shutil
 import glob
+import cv2
+
 
 def conv_depth_disparity(data, baseline, focal_length_x, focal_length_y):
   
@@ -22,6 +23,16 @@ def conv_depth_disparity(data, baseline, focal_length_x, focal_length_y):
             if not data[i,j]==0.0:
                 data[i,j]=(baseline*focal_length_x)/data[i,j]
 
+    return data
+
+def conv_depth_disparity_alg(data, basline, focal_length_x, focal_length_y):
+    nrows, ncols = data.shape
+    k_mat=np.matrix([[focal_length_x, 0, (nrows/2.0)],[0, focal_length_y, (ncols/2.0)],[0, 0, 1.0]])
+    
+    for i in range(nrows):
+        for j in range(ncols):
+            norm_pt=np.linalg.inv(k_mat)*np.matrix([[i], [j], [1.0]])
+            data[i,j]=math.sqrt(math.pow(data[i, j], 2)/(math.pow(norm_pt[0], 2) + math.pow(norm_pt[1],2) + 1))
     return data
 
 def conv_depth_disparity_cam_cen(data, baseline, focal_length_x, focal_length_y):
@@ -66,22 +77,11 @@ def conv_gt(path_root):
         gt_image_paths = rename_depth_files(gt_path)
         for gt_image_path in gt_image_paths:
             image_data = universal_reader(gt_image_path)
-            image_data = conv_depth_disparity(image_data, p_mat[0, 3], k_mat[0, 0], k_mat[1,1])
+            image_data=conv_depth_disparity(image_data, p_mat[0, 3], k_mat[0, 0], k_mat[1,1])
             image_name = os.path.basename(gt_image_path).split(".")[0]
             universal_writer(os.path.join(gt_path, image_name + ".raw"), image_data)
             universal_writer(os.path.join(gt_png_path, image_name + ".png"), image_data)
             os.remove(gt_image_path)
-
-def conv_gt_dir(path, out_path, baseline, focal_length_x, focal_length_y):
-    
-    gt_folder_paths = sorted(glob.glob(os.path.join(path, "*/")))
-
-    for gt_folder_num, gt_folder_path in enumerate(gt_folder_paths):
-        image_data = universal_reader(glob.glob(os.path.join(gt_folder_path, "*.exr"))[0])
-        image_data = conv_depth_disparity(image_data, baseline, focal_length_x, focal_length_y)
-        universal_writer(os.path.join(out_path, str(gt_folder_num) + ".raw"), image_data)
-        universal_writer(os.path.join(out_path, str(gt_folder_num) + ".png"), image_data)
-
 
 def conv_dir(path, out_path, input_type="png", output_type="raw"):
     
@@ -90,7 +90,6 @@ def conv_dir(path, out_path, input_type="png", output_type="raw"):
     for img_num, img_path in enumerate(img_paths):
         image_data = universal_reader(img_path)
         universal_writer(os.path.join(out_path, str(img_num) + "." + output_type), image_data)
-
 
 def unit_vector(vector):
     return vector / np.linalg.norm(vector)
@@ -171,7 +170,7 @@ def universal_writer(path, img_data):
         if im.mode != 'RGB':
             im = im.convert('RGB')
         im.save(path)
-        # cv.imsave(path,img_data)
+        #cv2.imsave(path,img_data)
     return
 
 def create_folder(folder_path):
