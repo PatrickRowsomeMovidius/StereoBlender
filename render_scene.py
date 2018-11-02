@@ -27,7 +27,7 @@ def parse_options():
     parser.add_argument("-t", "--traj_mode", dest="traj_mode", type=str, default="none",
             help="This is a string option to set the trajectory mode, possible values are: none, random, linear, rotation, linear_random_rotation, linear_random_translation")
     parser.add_argument("-n", "--num_samples", dest="num_samples", type=int, default=10, help="Number of sequences to render")
-    parser.add_argument("-m", "--multi_cam", dest="multi_cam", type=bool, default=False, help="Switch to activate multi-cam system")
+    parser.add_argument("-multi", "--multi_cam", dest="multi_cam", action='store_true', help="Switch to activate multi-cam system")
 
     args = parser.parse_args(argv)
 
@@ -59,8 +59,9 @@ def main():
     resolutions=["640x480"]
     data_widths=["8bit"]
     
+    res = [int(i) for i in resolutions[0].split("x")]
     l_poses = check_camera_bookmarks(options.multi_cam)
-    l_cam, r_cam = setup_cams(bpy.data.objects["Camera"])
+    l_cam, r_cam = setup_cams(bpy.data.objects["Camera"], res)
     lr_poses = calc_camera_poses(l_poses, options.num_samples, options.error_mode, options.traj_mode)
 
     for resolution in resolutions:

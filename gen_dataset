@@ -25,6 +25,9 @@ def parse_args():
     parser.add_argument("-n", "--num_samples", action="store",
                         type=int, dest="num_samples", default=10,
                         help="number of samples to generate")
+    parser.add_argument("-multi", "--multi_cam", action="store",
+                        type=bool, dest="multi_cam", default=False,
+                        help="Toggle on multi camera mode")
 
     options = parser.parse_args()
     
@@ -42,7 +45,11 @@ def main():
                         options.blender_model,
                         "-b", "-P",
                         script, "--", 
-                        "-e", options.error_mode , "-t", options.traj_mode , "-n", str(options.num_samples)])
+                        "-e", options.error_mode ,
+                        "-t", options.traj_mode , 
+                        "-n", str(options.num_samples)])
+    if options.multi_cam:
+        cmd .append(" -multi")
 
     os.system(cmd)
     dataset_basename = os.path.basename(options.blender_model).split(".")[0]

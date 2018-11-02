@@ -109,7 +109,6 @@ def stereo_transform(l_obj, r_obj, baseline):
 def get_calibration_matrix_P(l_cam, r_cam):
     return l_cam.matrix_world.inverted() * r_cam.matrix_world
 
-
 def print_calib_file(l_cam_obj, r_cam_obj, output_directory, filename):
     # print k matrix for left and right camera
     calib_file_path = os.path.join(output_directory, filename + ".txt")
@@ -171,9 +170,10 @@ def setup_render_options(scene, resolution, data_width, use_GPU=True):
     scene.use_nodes = True
 
 
-def setup_cams(l_cam):
-    l_cam.data.sensor_height=2.160
-    l_cam.data.sensor_width=3.840
+def setup_cams(l_cam, res):
+    pixel_width = 0.003
+    l_cam.data.sensor_height = res[1] * pixel_width 
+    l_cam.data.sensor_width= res[0] * pixel_width
     l_cam.data.lens=2.793615
     l_cam.data.sensor_fit='HORIZONTAL'
     l_cam.select = True
@@ -415,7 +415,6 @@ def calc_camera_poses(l_cam_poses, num_samples, error_mode="no_error", traj_mode
         elif error_mode == "cz_axis":
             camera_pose_pairs = const_rotation(camera_pose_pairs, 1, "z")
 
-        
         camera_poses = camera_poses + camera_pose_pairs
     
     return camera_poses
