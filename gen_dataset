@@ -7,7 +7,7 @@ import time
 import shutil
 
 homedir=os.environ['HOME']
-sys.path.append(os.path.join(homedir, "scripts/utils/"))
+sys.path.append(os.path.join(homedir, "Scripts/utils/"))
 import script_utils
 
 def parse_args():

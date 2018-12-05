@@ -6,7 +6,7 @@ import random
 import math
 import numpy as np
 
-
+baseline = 0.035
 def create_movi_path(resolution, data_width):
     # create directories for output structure
     base_prj_name = bpy.path.basename(bpy.context.blend_data.filepath).split('.')[0]
@@ -310,7 +310,7 @@ def random_positions(lr_poses, x_ang_thres=20, y_ang_thres=20, z_ang_thres=20, t
     poses = []
     for lr_pose in lr_poses:
         l_pose = random_error(lr_pose[0], x_ang_thres, y_ang_thres, z_ang_thres, trans_thres)
-        r_pose = local_transform(l_pose, x_trans=0.2)
+        r_pose = local_transform(l_pose, x_trans=baseline)
         poses.append([l_pose, r_pose])
     return poses
 
@@ -322,7 +322,7 @@ def linear_translation(camera_pose_pairs, path_length=5.0):
 
     for step_num in range(len(camera_pose_pairs)+1):
         l_cam_pose = local_transform(orig_l_cam_pose, z_trans=step_size*(-step_num))
-        r_cam_pose = local_transform(l_cam_pose, x_trans=0.035)
+        r_cam_pose = local_transform(l_cam_pose, x_trans=baseline)
         print(l_cam_pose)
         poses.append([l_cam_pose, r_cam_pose])
     return poses
@@ -340,7 +340,7 @@ def const_rotation(camera_pose_pairs, angle_range_radius=45.0, axis="x"):
         elif axis == "x":
             rotation = rpy_rotation_mat(angle, 0, 0)
         
-        r_pose = local_transform(lr_pose[0], x_trans=0.2)
+        r_pose = local_transform(lr_pose[0], x_trans=baseline)
         r_pose = r_pose*rotation
         poses.append([lr_pose[0], r_pose])
     return poses
@@ -356,7 +356,7 @@ def axis_rotation(camera_pose_pairs, angle_range_radius=45.0, axis="x"):
             rotation = rpy_rotation_mat(0, angle, 0)
         elif axis == "z":
             rotation = rpy_rotation_mat(0, 0, angle)
-        r_pose = local_transform(lr_pose[0], x_trans=0.2)
+        r_pose = local_transform(lr_pose[0], x_trans=baseline)
         r_pose = r_pose*rotation
         poses.append([lr_pose[0], r_pose])
         angle+=angle_step_size
@@ -368,7 +368,7 @@ def calc_camera_poses(l_cam_poses, num_samples, error_mode="no_error", traj_mode
 
     for l_cam_pose in l_cam_poses:
         # create baseline for right camera 
-        r_cam_pose = local_transform(l_cam_pose, x_trans=0.035)
+        r_cam_pose = local_transform(l_cam_pose, x_trans=baseline)
         
         # init camera list of left-right camera pose tuples  
         camera_pose_pairs = [[l_cam_pose, r_cam_pose] for _ in range(num_samples)]
