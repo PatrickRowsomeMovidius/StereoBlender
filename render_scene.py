@@ -84,7 +84,6 @@ def main():
             # render scenes at defined poses
             render_scenes(lr_poses, scene, l_cam, l_data_dir, r_cam, r_data_dir, output_node)
             
-
     l_cam.name = "Camera"
     r_cam.select = True
     bpy.ops.object.delete()

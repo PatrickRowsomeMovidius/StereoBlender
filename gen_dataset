@@ -7,7 +7,7 @@ import time
 import shutil
 
 homedir=os.environ['HOME']
-sys.path.append(os.path.join(homedir, "Scripts/utils/"))
+sys.path.append(os.path.join(homedir, "scripts/utils/"))
 import script_utils
 
 def parse_args():
@@ -25,9 +25,7 @@ def parse_args():
     parser.add_argument("-n", "--num_samples", action="store",
                         type=int, dest="num_samples", default=10,
                         help="number of samples to generate")
-    parser.add_argument("-multi", "--multi_cam", action="store",
-                        type=bool, dest="multi_cam", default=False,
-                        help="Toggle on multi camera mode")
+    parser.add_argument("-multi", "--multi_cam", dest="multi_cam", action='store_true', help="Switch to activate multi-cam system")
 
     options = parser.parse_args()
     
@@ -49,17 +47,21 @@ def main():
                         "-t", options.traj_mode , 
                         "-n", str(options.num_samples)])
     if options.multi_cam:
-        cmd .append(" -multi")
-
+        cmd += " -multi"
+    
+    # run blender command
     os.system(cmd)
+    
+    # convert ground truth info.
     dataset_basename = os.path.basename(options.blender_model).split(".")[0]
     output_path = os.path.join(homedir, "blender_output", dataset_basename)
     script_utils.conv_gt(output_path)
     
     # automate naming of dataset and moving to storage
     dataset_name = dataset_basename + options.traj_mode.title() + options.error_mode.title()
-    storage_fp = os.path.join("/storage/StereoEval/datasets/Synthetic", dataset_name)
+    storage_fp = os.path.join(homedir, "blender_output", dataset_name)
     shutil.move(output_path, storage_fp)
+    
     end = time.time()
     print("Dataset generated; time taken [min]: " + str((end-start)/60.0))
 

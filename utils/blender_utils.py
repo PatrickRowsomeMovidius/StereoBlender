@@ -375,7 +375,7 @@ def calc_camera_poses(l_cam_poses, num_samples, error_mode="no_error", traj_mode
         
         # calc trajectory, stationry, axis_rotation, linear, random, linear_random_rotations
         if traj_mode == "linear":
-            camera_pose_pairs = linear_translation(camera_pose_pairs, path_length=5.0)
+            camera_pose_pairs = linear_translation(camera_pose_pairs, path_length=1.0)
         elif traj_mode == "random":
             camera_pose_pairs = random_positions(camera_pose_pairs)
         elif traj_mode == "rotation":
